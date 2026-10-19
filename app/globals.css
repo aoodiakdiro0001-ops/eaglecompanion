@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, "Noto Sans Arabic", "Noto Kufi Arabic",
+    system-ui, -apple-system, sans-serif;
+  background-color: #070d16;
+  background-image:
+    radial-gradient(950px 520px at 88% -12%, rgba(56, 189, 248, 0.16), transparent 62%),
+    radial-gradient(720px 420px at -8% 18%, rgba(52, 211, 153, 0.1), transparent 60%),
+    linear-gradient(180deg, #070d16 0%, #060b13 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.32);
+  color: #f0f9ff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a1220;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e3550;
+  border-radius: 999px;
+  border: 2px solid #0a1220;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2b4a6f;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-panel/80 shadow-lg shadow-black/20 backdrop-blur;
+  }
+
+  .card-soft {
+    @apply rounded-2xl border border-line/70 bg-panel2/60;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-bold text-[#04121d] transition hover:bg-[#7dd3fc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-panel2/60 px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-brand/40 hover:bg-panel2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-danger/40 bg-danger/10 px-4 py-2.5 text-sm font-semibold text-danger transition hover:bg-danger/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-ink/90;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-line bg-[#081220] px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/60 transition focus:border-brand/60 focus:outline-none focus:ring-2 focus:ring-brand/20;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-panel2/70 px-2.5 py-1 text-xs font-medium text-muted;
+  }
+
+  .chip-success {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent;
+  }
+
+  .chip-warn {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-warn/30 bg-warn/10 px-2.5 py-1 text-xs font-medium text-warn;
+  }
+
+  .chip-danger {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-danger/30 bg-danger/10 px-2.5 py-1 text-xs font-medium text-danger;
+  }
+
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.18em] text-brand/90;
+  }
+
+  .muted {
+    @apply text-muted;
+  }
+
+  .divider {
+    @apply border-t border-line/70;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted transition hover:bg-panel2/70 hover:text-ink;
+  }
+
+  .nav-link-active {
+    @apply bg-brand/10 text-ink ring-1 ring-brand/25;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-lg bg-panel2;
+  }
+
+  .grid-overlay {
+    background-image:
+      linear-gradient(to right, rgba(56, 189, 248, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(56, 189, 248, 0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%);
+  }
+}
+
+:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.7);
+  outline-offset: 2px;
+}

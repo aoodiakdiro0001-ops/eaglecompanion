@@ -1,0 +1,28 @@
+{
+  "name": "Eagle Companion — رفيق النسر",
+  "short_name": "Eagle",
+  "description": "لوحة شفافة لإدارة الأجهزة بموافقة صريحة: حالة الجهاز ومشاركة شاشة لا تُسجَّل.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#070d16",
+  "theme_color": "#070d16",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
