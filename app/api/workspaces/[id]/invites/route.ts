@@ -18,11 +18,11 @@ export async function GET(_req: Request, context: Context) {
   const user = await getSessionUser();
   if (!user) return fail("يجب تسجيل الدخول", 401);
   const { id } = await context.params;
-  const membership = getMembership(user.id, id);
+  const membership = await getMembership(user.id, id);
   if (!membership || membership.role !== "owner") {
     return fail("لا تملك صلاحية عرض الدعوات", 403);
   }
-  return json({ invites: listActiveInvites(id) });
+  return json({ invites: await listActiveInvites(id) });
 }
 
 export async function POST(req: Request, context: Context) {
@@ -31,7 +31,7 @@ export async function POST(req: Request, context: Context) {
   if (!user) return fail("يجب تسجيل الدخول", 401);
   const { id } = await context.params;
 
-  const membership = getMembership(user.id, id);
+  const membership = await getMembership(user.id, id);
   if (!membership || membership.role !== "owner") {
     return fail("إنشاء الدعوات متاح للمالك فقط", 403);
   }
@@ -42,8 +42,8 @@ export async function POST(req: Request, context: Context) {
   const parsed = await parseBody(req, inviteCreateSchema);
   if (!parsed.ok) return parsed.response;
 
-  const invite = createInvite(id, user.id, parsed.data.role);
-  audit({
+  const invite = await createInvite(id, user.id, parsed.data.role);
+  await audit({
     workspaceId: id,
     action: "invite.create",
     actorUserId: user.id,

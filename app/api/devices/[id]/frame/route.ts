@@ -14,11 +14,11 @@ export async function GET(_req: Request, context: Context) {
   if (!user) return fail("يجب تسجيل الدخول", 401);
   const { id } = await context.params;
 
-  const found = getDeviceForUser(user.id, id);
+  const found = await getDeviceForUser(user.id, id);
   if (!found) return fail("الجهاز غير موجود", 404);
 
   const frame = getFrame(found.device.id);
-  const share = activeShare(found.device.id);
+  const share = await activeShare(found.device.id);
   if (
     !frame ||
     !share ||

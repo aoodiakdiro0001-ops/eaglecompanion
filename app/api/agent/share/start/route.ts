@@ -10,14 +10,14 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const token = bearerToken(req);
   if (!token) return fail("رمز الجهاز مطلوب", 401);
-  const device = deviceByToken(token);
+  const device = await deviceByToken(token);
   if (!device) return fail("الجهاز غير مصرح أو تم إلغاؤه", 401);
 
   const limit = rateLimit(`share-start:${device.id}`, 12, 60 * 1000);
   if (!limit.allowed) return fail("محاولات كثيرة، حاول بعد قليل", 429);
 
-  const share = startShare(device.id);
-  audit({
+  const share = await startShare(device.id);
+  await audit({
     workspaceId: device.workspace_id,
     action: "share.start",
     deviceId: device.id,

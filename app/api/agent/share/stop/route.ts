@@ -9,11 +9,11 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const token = bearerToken(req);
   if (!token) return fail("رمز الجهاز مطلوب", 401);
-  const device = deviceByToken(token);
+  const device = await deviceByToken(token);
   if (!device) return fail("الجهاز غير مصرح أو تم إلغاؤه", 401);
 
-  stopShare(device.id);
-  audit({
+  await stopShare(device.id);
+  await audit({
     workspaceId: device.workspace_id,
     action: "share.stop",
     deviceId: device.id,

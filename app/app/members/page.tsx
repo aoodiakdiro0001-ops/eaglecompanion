@@ -31,7 +31,7 @@ export default async function MembersPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
-  const workspace = resolveWorkspace(user.id, params.ws ?? null);
+  const workspace = await resolveWorkspace(user.id, params.ws ?? null);
 
   if (!workspace) {
     return (
@@ -41,7 +41,7 @@ export default async function MembersPage({
     );
   }
 
-  const members = listMembers(workspace.id);
+  const members = await listMembers(workspace.id);
 
   return (
     <div className="space-y-6">

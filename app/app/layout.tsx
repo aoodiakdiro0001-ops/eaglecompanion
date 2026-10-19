@@ -10,7 +10,7 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const user = await requireUser();
-  const workspaces = listWorkspaces(user.id);
+  const workspaces = await listWorkspaces(user.id);
 
   return (
     <AppShell

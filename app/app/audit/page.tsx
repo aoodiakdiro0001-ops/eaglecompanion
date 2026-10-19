@@ -20,7 +20,7 @@ export default async function AuditPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
-  const workspace = resolveWorkspace(user.id, params.ws ?? null);
+  const workspace = await resolveWorkspace(user.id, params.ws ?? null);
 
   if (!workspace) {
     return (
@@ -30,7 +30,7 @@ export default async function AuditPage({
     );
   }
 
-  const events = listAudit(workspace.id, 100);
+  const events = await listAudit(workspace.id, 100);
 
   return (
     <div className="space-y-6">

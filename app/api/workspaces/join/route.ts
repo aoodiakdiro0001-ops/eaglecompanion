@@ -16,14 +16,14 @@ export async function POST(req: Request) {
   if (!parsed.ok) return parsed.response;
 
   try {
-    const result = joinWorkspace(user.id, parsed.data.code);
-    audit({
+    const result = await joinWorkspace(user.id, parsed.data.code);
+    await audit({
       workspaceId: result.workspaceId,
       action: "member.join",
       actorUserId: user.id,
       metadata: { role: result.role },
     });
-    const workspace = getWorkspaceForUser(user.id, result.workspaceId);
+    const workspace = await getWorkspaceForUser(user.id, result.workspaceId);
     return json({ workspace, role: result.role });
   } catch (error) {
     if (error instanceof InviteError) {

@@ -12,8 +12,8 @@ export async function GET(req: Request) {
 
   const workspaceId = new URL(req.url).searchParams.get("workspaceId");
   if (!workspaceId) return fail("معرّف المساحة مطلوب", 400);
-  if (!getMembership(user.id, workspaceId)) {
+  if (!(await getMembership(user.id, workspaceId))) {
     return fail("لا تملك صلاحية الوصول", 403);
   }
-  return json({ events: listAudit(workspaceId) });
+  return json({ events: await listAudit(workspaceId) });
 }

@@ -1,6 +1,6 @@
 import type { AgentPairInput } from "@/lib/validation";
 import type { Device, DeviceView, Role } from "@/types";
-import { getDb } from "./db";
+import { q, qGet, qRun } from "./db";
 import { audit } from "./audit";
 import { hashDeviceToken, randomToken } from "./crypto";
 import { newId, now } from "./ids";
@@ -28,132 +28,134 @@ export function isOnline(device: Device, nowMs = Date.now()): boolean {
   );
 }
 
-export function createPairingCode(
+export async function createPairingCode(
   workspaceId: string,
   userId: string,
-): { code: string; expiresAt: number } {
+): Promise<{ code: string; expiresAt: number }> {
   const code = newPairingCode();
   const createdAt = now();
   const expiresAt = createdAt + PAIRING_TTL_MS;
-  getDb()
-    .prepare(
-      `INSERT INTO pairing_codes (id, workspace_id, code_hash, created_by, expires_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-    )
-    .run(newId("pair"), workspaceId, hashPairingCode(code), userId, expiresAt, createdAt);
+  await qRun(
+    `INSERT INTO pairing_codes (id, workspace_id, code_hash, created_by, expires_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    newId("pair"),
+    workspaceId,
+    hashPairingCode(code),
+    userId,
+    expiresAt,
+    createdAt,
+  );
   return { code, expiresAt };
 }
 
-export function consumePairingCode(
+export async function consumePairingCode(
   input: AgentPairInput,
   ip?: string,
-): { device: Device; token: string } {
-  const db = getDb();
+): Promise<{ device: Device; token: string }> {
   const codeHash = hashPairingCode(normalizeCode(input.code));
   const timestamp = now();
 
-  return db.transaction(() => {
-    const row = db
-      .prepare(
-        `SELECT * FROM pairing_codes
-         WHERE code_hash = ? AND used_at IS NULL AND expires_at > ?`,
-      )
-      .get(codeHash, timestamp) as
-      | { id: string; workspace_id: string; created_by: string }
-      | undefined;
+  // Atomic claim prevents two devices from consuming the same code concurrently.
+  const claimed = await qRun(
+    "UPDATE pairing_codes SET used_at = ? WHERE code_hash = ? AND used_at IS NULL AND expires_at > ?",
+    timestamp,
+    codeHash,
+    timestamp,
+  );
+  if (claimed.changes === 0) throw new PairingError("كود الاقتران غير صالح أو منتهي");
 
-    if (!row) throw new PairingError("كود الاقتران غير صالح أو منتهي");
+  const row = await qGet<{ id: string; workspace_id: string; created_by: string }>(
+    "SELECT id, workspace_id, created_by FROM pairing_codes WHERE code_hash = ?",
+    codeHash,
+  );
+  if (!row) throw new PairingError("كود الاقتران غير صالح أو منتهي");
 
-    db.prepare("UPDATE pairing_codes SET used_at = ? WHERE id = ?").run(
-      timestamp,
-      row.id,
-    );
+  const deviceId = newId("dev");
+  const token = randomToken(32);
+  await qRun(
+    `INSERT INTO devices
+     (id, workspace_id, name, platform, model, token_hash, screen_w, screen_h,
+      user_agent, paired_at, last_seen_at)
+     VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)`,
+    deviceId,
+    row.workspace_id,
+    input.name.trim(),
+    input.platform ?? null,
+    hashDeviceToken(token),
+    input.screenW ?? null,
+    input.screenH ?? null,
+    input.userAgent ?? null,
+    timestamp,
+    timestamp,
+  );
 
-    const deviceId = newId("dev");
-    const token = randomToken(32);
-    db.prepare(
-      `INSERT INTO devices
-       (id, workspace_id, name, platform, model, token_hash, screen_w, screen_h,
-        user_agent, paired_at, last_seen_at)
-       VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      deviceId,
-      row.workspace_id,
-      input.name.trim(),
-      input.platform ?? null,
-      hashDeviceToken(token),
-      input.screenW ?? null,
-      input.screenH ?? null,
-      input.userAgent ?? null,
-      timestamp,
-      timestamp,
-    );
+  await audit({
+    workspaceId: row.workspace_id,
+    action: "device.pair",
+    actorUserId: row.created_by,
+    deviceId,
+    metadata: { name: input.name.trim() },
+    ip: ip ?? null,
+  });
 
-    audit({
-      workspaceId: row.workspace_id,
-      action: "device.pair",
-      actorUserId: row.created_by,
-      deviceId,
-      metadata: { name: input.name.trim() },
-      ip: ip ?? null,
-    });
-
-    const device = db
-      .prepare(`SELECT ${PUBLIC_DEVICE_COLUMNS} FROM devices d WHERE d.id = ?`)
-      .get(deviceId) as Device;
-    return { device, token };
-  })();
+  const device = await qGet<Device>(
+    `SELECT ${PUBLIC_DEVICE_COLUMNS} FROM devices d WHERE d.id = ?`,
+    deviceId,
+  );
+  if (!device) throw new PairingError("تعذر إنشاء الجهاز");
+  return { device, token };
 }
 
-export function getDevice(deviceId: string): Device | null {
-  const row = getDb()
-    .prepare(`SELECT ${PUBLIC_DEVICE_COLUMNS} FROM devices d WHERE d.id = ?`)
-    .get(deviceId) as Device | undefined;
+export async function getDevice(deviceId: string): Promise<Device | null> {
+  const row = await qGet<Device>(
+    `SELECT ${PUBLIC_DEVICE_COLUMNS} FROM devices d WHERE d.id = ?`,
+    deviceId,
+  );
   return row ?? null;
 }
 
-export function getDeviceForUser(
+export async function getDeviceForUser(
   userId: string,
   deviceId: string,
-): { device: Device; role: Role } | null {
-  const row = getDb()
-    .prepare(
-      `SELECT ${PUBLIC_DEVICE_COLUMNS}, m.role
-       FROM devices d
-       JOIN workspace_members m ON m.workspace_id = d.workspace_id
-       WHERE d.id = ? AND m.user_id = ?`,
-    )
-    .get(deviceId, userId) as (Device & { role: Role }) | undefined;
+): Promise<{ device: Device; role: Role } | null> {
+  const row = await qGet<Device & { role: Role }>(
+    `SELECT ${PUBLIC_DEVICE_COLUMNS}, m.role
+     FROM devices d
+     JOIN workspace_members m ON m.workspace_id = d.workspace_id
+     WHERE d.id = ? AND m.user_id = ?`,
+    deviceId,
+    userId,
+  );
   if (!row) return null;
   const { role, ...device } = row;
   return { device: device as Device, role };
 }
 
-export function deviceByToken(token: string): Device | null {
-  const row = getDb()
-    .prepare(
-      `SELECT ${PUBLIC_DEVICE_COLUMNS} FROM devices d
-       WHERE d.token_hash = ? AND d.revoked_at IS NULL`,
-    )
-    .get(hashDeviceToken(token)) as Device | undefined;
+export async function deviceByToken(token: string): Promise<Device | null> {
+  const row = await qGet<Device>(
+    `SELECT ${PUBLIC_DEVICE_COLUMNS} FROM devices d
+     WHERE d.token_hash = ? AND d.revoked_at IS NULL`,
+    hashDeviceToken(token),
+  );
   return row ?? null;
 }
 
-export function listDevices(workspaceId: string, nowMs = Date.now()): DeviceView[] {
+export async function listDevices(workspaceId: string, nowMs = Date.now()): Promise<DeviceView[]> {
   const freshThreshold = nowMs - 5_000;
-  const rows = getDb()
-    .prepare(
-      `SELECT ${PUBLIC_DEVICE_COLUMNS},
-         EXISTS(
-           SELECT 1 FROM share_sessions s
-           WHERE s.device_id = d.id AND s.ended_at IS NULL
-             AND s.expires_at > ? AND s.last_frame_at > ?
-         ) AS sharing
-       FROM devices d
-       WHERE d.workspace_id = ? AND d.revoked_at IS NULL
-       ORDER BY COALESCE(d.last_seen_at, d.paired_at) DESC`,
-    )
-    .all(nowMs, freshThreshold, workspaceId) as Array<Device & { sharing: number }>;
+  const rows = await q<Device & { sharing: number }>(
+    `SELECT ${PUBLIC_DEVICE_COLUMNS},
+       EXISTS(
+         SELECT 1 FROM share_sessions s
+         WHERE s.device_id = d.id AND s.ended_at IS NULL
+           AND s.expires_at > ? AND s.last_frame_at > ?
+       ) AS sharing
+     FROM devices d
+     WHERE d.workspace_id = ? AND d.revoked_at IS NULL
+     ORDER BY COALESCE(d.last_seen_at, d.paired_at) DESC`,
+    nowMs,
+    freshThreshold,
+    workspaceId,
+  );
 
   return rows.map(({ sharing, ...device }) => ({
     ...device,
@@ -162,28 +164,30 @@ export function listDevices(workspaceId: string, nowMs = Date.now()): DeviceView
   }));
 }
 
-export function revokeDevice(
+export async function revokeDevice(
   workspaceId: string,
   deviceId: string,
   actorUserId: string,
   role: Role,
   ip?: string,
-): boolean {
+): Promise<boolean> {
   if (!canManageDevices(role)) return false;
-  const db = getDb();
   const timestamp = now();
-  const result = db
-    .prepare(
-      "UPDATE devices SET revoked_at = ? WHERE id = ? AND workspace_id = ? AND revoked_at IS NULL",
-    )
-    .run(timestamp, deviceId, workspaceId);
+  const result = await qRun(
+    "UPDATE devices SET revoked_at = ? WHERE id = ? AND workspace_id = ? AND revoked_at IS NULL",
+    timestamp,
+    deviceId,
+    workspaceId,
+  );
   if (result.changes === 0) return false;
 
-  db.prepare(
+  await qRun(
     "UPDATE share_sessions SET ended_at = ? WHERE device_id = ? AND ended_at IS NULL",
-  ).run(timestamp, deviceId);
+    timestamp,
+    deviceId,
+  );
   clearFrame(deviceId);
-  audit({
+  await audit({
     workspaceId,
     action: "device.revoke",
     actorUserId,
@@ -203,7 +207,7 @@ export interface HeartbeatPatch {
   screenH?: number;
 }
 
-export function touchDevice(deviceId: string, patch: HeartbeatPatch): Device | null {
+export async function touchDevice(deviceId: string, patch: HeartbeatPatch): Promise<Device | null> {
   const assignments: string[] = ["last_seen_at = ?"];
   const values: Array<string | number | null> = [now()];
 
@@ -227,9 +231,7 @@ export function touchDevice(deviceId: string, patch: HeartbeatPatch): Device | n
   push("screen_h", patch.screenH);
 
   values.push(deviceId);
-  getDb()
-    .prepare(`UPDATE devices SET ${assignments.join(", ")} WHERE id = ?`)
-    .run(...values);
+  await qRun(`UPDATE devices SET ${assignments.join(", ")} WHERE id = ?`, ...values);
   return getDevice(deviceId);
 }
 

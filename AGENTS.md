@@ -2,7 +2,7 @@
 
 ## Project
 
-Eagle Companion is a Next.js 15 (App Router) + TypeScript app with SQLite (`better-sqlite3`) and Tailwind. It is a consent-based device-status dashboard with optional screen sharing. It must never become a covert monitoring tool.
+Eagle Companion is a Next.js 15 (App Router) + TypeScript app with SQLite via `@libsql/client` (local file, or Turso remotely) and Tailwind. It is a consent-based device-status dashboard with optional screen sharing. It must never become a covert monitoring tool.
 
 ## Commands
 

@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import { createClient, type Client, type InValue } from "@libsql/client";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -104,31 +104,100 @@ CREATE INDEX IF NOT EXISTS idx_audit_workspace ON audit_logs(workspace_id, creat
 
 declare global {
   // eslint-disable-next-line no-var
-  var __eagleDb: Database.Database | undefined;
+  var __eagleClient: Client | undefined;
+  // eslint-disable-next-line no-var
+  var __eagleSchema: Promise<void> | undefined;
 }
 
-function open(): Database.Database {
-  const file = process.env.DATABASE_PATH || path.join(process.cwd(), "data", "eagle.db");
-  if (file !== ":memory:") {
-    fs.mkdirSync(path.dirname(file), { recursive: true });
+function normalizeUrl(raw: string): string {
+  if (
+    raw === ":memory:" ||
+    raw.startsWith("file:") ||
+    raw.startsWith("libsql:") ||
+    raw.startsWith("https://") ||
+    raw.startsWith("http://")
+  ) {
+    return raw;
   }
-  const db = new Database(file);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  db.exec(SCHEMA);
-  return db;
+  return `file:${raw}`;
 }
 
-export function getDb(): Database.Database {
-  if (!globalThis.__eagleDb) {
-    globalThis.__eagleDb = open();
+function open(): Client {
+  const raw = process.env.TURSO_DATABASE_URL || process.env.DATABASE_PATH || "./data/eagle.db";
+  const url = normalizeUrl(raw);
+  if (url.startsWith("file:")) {
+    const target = path.resolve(url.slice("file:".length));
+    fs.mkdirSync(path.dirname(target), { recursive: true });
   }
-  return globalThis.__eagleDb;
+  const isRemote = !url.startsWith("file:") && url !== ":memory:";
+  return createClient({
+    url: url.startsWith("file:") ? `file:${path.resolve(url.slice("file:".length))}` : url,
+    authToken: isRemote ? process.env.TURSO_AUTH_TOKEN : undefined,
+  });
 }
 
-export function resetDbForTests(): void {
-  if (globalThis.__eagleDb) {
-    globalThis.__eagleDb.close();
-    globalThis.__eagleDb = undefined;
+function getClient(): Client {
+  if (!globalThis.__eagleClient) {
+    globalThis.__eagleClient = open();
   }
+  return globalThis.__eagleClient;
+}
+
+export async function ensureSchema(): Promise<void> {
+  if (!globalThis.__eagleSchema) {
+    globalThis.__eagleSchema = (async () => {
+      const client = getClient();
+      const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_PATH || "./data/eagle.db";
+      if (url.startsWith("file:") || url === ":memory:" || !url.includes(":")) {
+        try {
+          await client.execute("PRAGMA journal_mode = WAL");
+          await client.execute("PRAGMA foreign_keys = ON");
+        } catch {
+          // older local engines may reject pragmas; foreign keys verified by tests
+        }
+      }
+      await client.executeMultiple(SCHEMA);
+    })();
+  }
+  await globalThis.__eagleSchema;
+}
+
+export interface RunResult {
+  changes: number;
+}
+
+export async function q<T>(sql: string, ...args: InValue[]): Promise<T[]> {
+  await ensureSchema();
+  const res = await getClient().execute({ sql, args });
+  return res.rows as unknown as T[];
+}
+
+export async function qGet<T>(sql: string, ...args: InValue[]): Promise<T | undefined> {
+  const rows = await q<T>(sql, ...args);
+  return rows[0];
+}
+
+export async function qRun(sql: string, ...args: InValue[]): Promise<RunResult> {
+  await ensureSchema();
+  const res = await getClient().execute({ sql, args });
+  return { changes: Number(res.rowsAffected) };
+}
+
+export async function qTxn(
+  statements: Array<{ sql: string; args: InValue[] }>,
+): Promise<void> {
+  await ensureSchema();
+  await getClient().batch(statements, "write");
+}
+
+export async function resetDbForTests(): Promise<void> {
+  if (globalThis.__eagleClient) {
+    try {
+      globalThis.__eagleClient.close();
+    } catch {
+      // already closed
+    }
+    globalThis.__eagleClient = undefined;
+  }
+  globalThis.__eagleSchema = undefined;
 }

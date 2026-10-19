@@ -34,7 +34,7 @@
 ## التقنيات
 
 - Next.js 15 (App Router) + React 19 + TypeScript
-- SQLite عبر `better-sqlite3` (تُنشأ الجداول تلقائياً)
+- SQLite عبر `@libsql/client` — يعمل محلياً بملف، أو سحابياً على Turso المجاني (تُنشأ الجداول تلقائياً)
 - Tailwind CSS 3.4
 - Zod للتحقق من المدخلات
 - Vitest للاختبارات
@@ -66,7 +66,9 @@ npm run dev
 
 | المتغير | الافتراضي | الوصف |
 | --- | --- | --- |
-| `DATABASE_PATH` | `./data/eagle.db` | مسار قاعدة SQLite. استخدم `:memory:` في الاختبارات. |
+| `DATABASE_PATH` | `./data/eagle.db` | مسار قاعدة SQLite المحلية. استخدم `:memory:` في الاختبارات. |
+| `TURSO_DATABASE_URL` | — | ضعه ليستخدم التطبيق Turso السحابي (يعلو على `DATABASE_PATH`). |
+| `TURSO_AUTH_TOKEN` | — | رمز الوصول لـ Turso (إلزامي مع رابط سحابي). |
 | `SESSION_SECRET` | قيمة تطويرية | سر HMAC لتجزئة أكواد الاقتران والدعوات. يجب ضبطه في الإنتاج. |
 
 تغيير `SESSION_SECRET` يلغي كل أكواد الاقتران والدعوات غير المستخدمة. لا تضع القيمة الحقيقية في المستودع.

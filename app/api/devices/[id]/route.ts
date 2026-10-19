@@ -17,10 +17,10 @@ export async function GET(_req: Request, context: Context) {
   if (!user) return fail("يجب تسجيل الدخول", 401);
   const { id } = await context.params;
 
-  const found = getDeviceForUser(user.id, id);
+  const found = await getDeviceForUser(user.id, id);
   if (!found) return fail("الجهاز غير موجود", 404);
 
-  const share = activeShare(found.device.id);
+  const share = await activeShare(found.device.id);
   return json({
     device: found.device,
     role: found.role,
@@ -43,13 +43,13 @@ export async function DELETE(req: Request, context: Context) {
   if (!user) return fail("يجب تسجيل الدخول", 401);
   const { id } = await context.params;
 
-  const found = getDeviceForUser(user.id, id);
+  const found = await getDeviceForUser(user.id, id);
   if (!found) return fail("الجهاز غير موجود", 404);
   if (!canManageDevices(found.role)) {
     return fail("إلغاء الجهاز غير متاح لدورك", 403);
   }
 
-  const revoked = revokeDevice(
+  const revoked = await revokeDevice(
     found.device.workspace_id,
     found.device.id,
     user.id,

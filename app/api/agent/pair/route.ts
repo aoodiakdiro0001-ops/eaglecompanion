@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   if (!parsed.ok) return parsed.response;
 
   try {
-    const { device, token } = consumePairingCode(parsed.data, ip);
+    const { device, token } = await consumePairingCode(parsed.data, ip);
     return json({ token, device }, 201);
   } catch (error) {
     if (error instanceof PairingError) {

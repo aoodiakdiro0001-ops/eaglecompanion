@@ -60,12 +60,12 @@ export default async function DevicePage({
 }) {
   const user = await requireUser();
   const { id } = await params;
-  const found = getDeviceForUser(user.id, id);
+  const found = await getDeviceForUser(user.id, id);
   if (!found) notFound();
 
   const { device, role } = found;
   const workspaceId = device.workspace_id;
-  const share = activeShare(device.id);
+  const share = await activeShare(device.id);
   const initialShare: ShareInfo | null = share
     ? {
         id: share.id,
@@ -81,7 +81,7 @@ export default async function DevicePage({
   const online = device.revoked_at === null && device.last_seen_at !== null
     ? Date.now() - device.last_seen_at <= 45_000
     : false;
-  const deviceEvents = listAudit(workspaceId, 200)
+  const deviceEvents = (await listAudit(workspaceId, 200))
     .filter((event) => event.device_id === device.id)
     .slice(0, 12);
 

@@ -13,7 +13,7 @@ const MAX_FRAME_BYTES = 400_000;
 export async function POST(req: Request) {
   const token = bearerToken(req);
   if (!token) return fail("رمز الجهاز مطلوب", 401);
-  const device = deviceByToken(token);
+  const device = await deviceByToken(token);
   if (!device) return fail("الجهاز غير مصرح أو تم إلغاؤه", 401);
 
   const limit = rateLimit(`frames:${device.id}`, 180, 60 * 1000);
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   if (bytes.length === 0) return fail("الصورة فارغة", 400);
   if (bytes.length > MAX_FRAME_BYTES) return fail("الإطار كبير جداً", 413);
 
-  const share = getShare(parsed.data.shareId);
+  const share = await getShare(parsed.data.shareId);
   const timestamp = Date.now();
   if (!share || share.device_id !== device.id) {
     return fail("جلسة مشاركة غير صالحة", 404);
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   }
 
   setFrame(device.id, share.id, bytes, "image/jpeg", timestamp);
-  recordFrame(share.id, timestamp);
+  await recordFrame(share.id, timestamp);
 
   return json({ ok: true, expiresAt: share.expires_at });
 }

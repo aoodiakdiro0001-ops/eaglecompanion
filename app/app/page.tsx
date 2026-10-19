@@ -27,7 +27,7 @@ export default async function DashboardPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
-  const workspace = resolveWorkspace(user.id, params.ws ?? null);
+  const workspace = await resolveWorkspace(user.id, params.ws ?? null);
 
   if (!workspace) {
     return (
@@ -47,9 +47,9 @@ export default async function DashboardPage({
     );
   }
 
-  const devices = listDevices(workspace.id);
-  const members = listMembers(workspace.id);
-  const events = listAudit(workspace.id, 6);
+  const devices = await listDevices(workspace.id);
+  const members = await listMembers(workspace.id);
+  const events = await listAudit(workspace.id, 6);
   const online = devices.filter((device) => device.online).length;
   const sharing = devices.filter((device) => device.sharing).length;
   const canManage = workspace.role === "owner" || workspace.role === "member";

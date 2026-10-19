@@ -19,12 +19,12 @@ export async function POST(req: Request) {
   const parsed = await parseBody(req, pairingCodeSchema);
   if (!parsed.ok) return parsed.response;
 
-  const membership = getMembership(user.id, parsed.data.workspaceId);
+  const membership = await getMembership(user.id, parsed.data.workspaceId);
   if (!membership) return fail("لا تملك صلاحية الوصول", 403);
   if (!canManageDevices(membership.role)) {
     return fail("إضافة الأجهزة غير متاحة لدورك", 403);
   }
 
-  const result = createPairingCode(parsed.data.workspaceId, user.id);
+  const result = await createPairingCode(parsed.data.workspaceId, user.id);
   return json(result, 201);
 }

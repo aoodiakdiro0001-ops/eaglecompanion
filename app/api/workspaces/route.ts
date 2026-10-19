@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return fail("يجب تسجيل الدخول", 401);
-  return json({ workspaces: listWorkspaces(user.id) });
+  return json({ workspaces: await listWorkspaces(user.id) });
 }
 
 export async function POST(req: Request) {
@@ -21,8 +21,8 @@ export async function POST(req: Request) {
   const parsed = await parseBody(req, workspaceSchema);
   if (!parsed.ok) return parsed.response;
 
-  const workspace = createWorkspace(user.id, parsed.data.name);
-  audit({
+  const workspace = await createWorkspace(user.id, parsed.data.name);
+  await audit({
     workspaceId: workspace.id,
     action: "workspace.create",
     actorUserId: user.id,

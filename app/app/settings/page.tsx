@@ -30,8 +30,8 @@ export default async function SettingsPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
-  const workspace = resolveWorkspace(user.id, params.ws ?? null);
-  const members = workspace ? listMembers(workspace.id) : [];
+  const workspace = await resolveWorkspace(user.id, params.ws ?? null);
+  const members = workspace ? await listMembers(workspace.id) : [];
 
   return (
     <div className="space-y-6">
