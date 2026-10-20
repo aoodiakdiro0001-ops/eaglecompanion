@@ -14,15 +14,16 @@
 ## الخطوة 1 — إنشاء قاعدة Turso (3 دقائق)
 
 ```bash
-# سجّل حساباً جديد (تفتح نافذة المتصفح — استخدم البريد أو GitHub)
-npx @turso/cli auth signup
+# سجّل حساباً جديد (يفتح نافذة المتصفح — استخدم GitHub أو البريد)
+npm install -g turso
+turso auth signup
 
 # أنشئ القاعدة
-npx @turso/cli db create eagle
+turso db create eagle
 
 # احصل على الرابط والرمز — كلاهما ستحتاجه في الخطوة 3
-npx @turso/cli db show eagle --url
-npx @turso/cli db tokens create eagle
+turso db show eagle --url
+turso db tokens create eagle
 ```
 
 سيعطيك:
@@ -50,6 +51,8 @@ npx @turso/cli db tokens create eagle
 
 ## ملاحظات مهمة
 
-- **مشاركة الشاشة:** الإطارات تُخزن في الذاكرة 5 ثوانٍ (حماية قصوى) — على Vercel قد تتذبذب بين لحظات لأن الخادم موزع. كل شيء آخر (حسابات، أجهزة، صلاحيات، سجل تدقيق) دائم 100%.
+- **مشاركة الشاشة:** الإطارات تُخزن في الذاكرة 5 ثوانٍ (حماية قصوى) — على Vercel قد تتذبذب بين لحظات لأن الخادم موزع. كل شيء آخر (حسابات، أجهزة، صلاحيات، سجل تدقيق) دائم 100% بفضل Turso.
 - **تحديثات مستقبلية:** كل `git push` إلى `main` ينشر تلقائياً على Vercel.
-- **نسخة احتياطية للقاعدة:** `npx @turso/cli db shell eagle ".dump"` يصنع نسخة SQL كاملة.
+- **نسخة احتياطية للقاعدة:** `turso db shell eagle ".dump"` يصنع نسخة SQL كاملة.
+- **إن أنشأت القاعدة من لوحة Turso مباشرة** (كما فعلت أنت): كل ما يلزمك من صفحة القاعدة على turso.app:
+  زر **Connect** يمنحك الرابط `libsql://…` و نقسم **Tokens → New token** يعطيك `TURSO_AUTH_TOKEN`.
