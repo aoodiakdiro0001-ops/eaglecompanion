@@ -363,6 +363,38 @@ export default function HomePage() {
             <span>بياناتك تبقى في خادمك</span>
           </div>
         </div>
+        <div className="mx-auto mt-6 max-w-6xl px-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line/40 pt-6 text-xs text-muted">
+            <p>
+              التصميم والبرمجة:{" "}
+              <span className="font-bold text-ink">Baran Avisat</span> — مبرمج محترف
+            </p>
+            <div className="flex flex-wrap items-center gap-4">
+              <a className="transition hover:text-ink" href="mailto:baranavisat@gmail.com">
+                baranavisat@gmail.com
+              </a>
+              <a dir="ltr" className="transition hover:text-ink" href="tel:+905313263722">
+                +90 531 326 37 22
+              </a>
+              <a
+                className="transition hover:text-ink"
+                href="https://wa.me/905313263722"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                واتساب
+              </a>
+              <a
+                className="transition hover:text-ink"
+                href="https://github.com/aoodiakdiro0001-ops"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GitHub
+              </a>
+            </div>
+          </div>
+        </div>
       </footer>
     </main>
   );

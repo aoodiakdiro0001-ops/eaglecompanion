@@ -166,6 +166,12 @@ export function AppShell({ user, workspaces, children }: AppShellProps) {
         <p className="px-1 text-[10px] leading-5 text-muted/70">
           أداة بموافقة صريحة. لا مراقبة خفية ولا صلاحيات متجاوزة.
         </p>
+        <p className="px-1 text-[10px] text-muted/70">
+          برمجة وتصميم Baran Avisat —{" "}
+          <a className="transition hover:text-ink" href="mailto:baranavisat@gmail.com">
+            baranavisat@gmail.com
+          </a>
+        </p>
       </div>
     </div>
   );

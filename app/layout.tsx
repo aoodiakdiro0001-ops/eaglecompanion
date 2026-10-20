@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   applicationName: "Eagle Companion",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/icon.svg",
-    apple: "/icon.svg",
+    icon: ["/icon.svg", "/icon-192.png"],
+    apple: "/apple-touch-icon.png",
   },
   appleWebApp: {
     capable: true,
